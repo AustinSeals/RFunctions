@@ -5,7 +5,7 @@ library(tibble)
 library(pcaMethods)
 library(ggplot2)
 library(patchwork)
-source('RFunctions/Missing.R') 
+source('RFunctions-main/Missing.R') 
 
 ###################################################################################################################################
 ### Generate Meta Data stats for both samples and Features. Samples shold be rows(identified in row names) and Features are Columns
@@ -200,6 +200,7 @@ batch_miss_filter67 = function( dat_ , batch_col  , select_cols = 1 ) {
 # 
 # 
 ##### END example work flow 
+
 
 
 
