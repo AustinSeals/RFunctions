@@ -5,17 +5,17 @@ I recommend downlaoding as a zip file and extracting the files to the main direc
 These functions were written in R  4.4.1.
 
 Main Packages Required:
-CAM3 ( only needed for 'Additional CAM Functions.R and CAM_DIAGNOSTICS.R') 
-debCAM ( only needed for 'Additional CAM Functions.R and CAM_DIAGNOSTICS.R')
-ggplot2
-dplyr
-tibble
-pcaMethods
-phateR
-ComplexUpset
-ComplexHeatmap
-uSort
-pastecs
-patchwork
-proBatch
-finalfit
+- CAM3 ( only needed for 'Additional CAM Functions.R and CAM_DIAGNOSTICS.R') 
+- debCAM ( only needed for 'Additional CAM Functions.R and CAM_DIAGNOSTICS.R')
+- ggplot2
+- dplyr
+- tibble
+- pcaMethods
+- phateR
+- ComplexUpset
+- ComplexHeatmap
+- uSort
+- pastecs
+- patchwork
+- proBatch
+- finalfit
