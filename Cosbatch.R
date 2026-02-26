@@ -1,5 +1,5 @@
 
-source("RFunctions\\Cosbin_functions_advanced.R")
+source("RFunctions-main\\Cosbin_functions_advanced.R")
 
 ####### cosbatch - cosbin by batch #################
 cosbatch  =  function(data_ , grp_ ,  batch_){
@@ -54,6 +54,7 @@ cosbatch  =  function(data_ , grp_ ,  batch_){
 
 
 }
+
 
 
 
