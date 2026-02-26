@@ -18,7 +18,8 @@ print_vec2 =  function(my_vector){
 
 
 
-print_table_final_fit_simple  =   function(data_ ,  label_column = "label_row",  title_ = NULL){
+print_table_final_fit_simple  =   function(data_ ,  label_column = "label",  title_ = NULL){
+ data_$label_row  =  ifelse(data_[ , label_column] != "" , T , F)
   
  return(  
   datatable( data_  , 
@@ -42,58 +43,6 @@ print_table_final_fit_simple  =   function(data_ ,  label_column = "label_row", 
 
   
 }
-
-
-
-
-
-
-
-print_table_final_fit_ptest  =   function(data_ ,  label_column = "label_row", p_column = "p"  , highlite =  c(1)  ,  title_ = NULL){
-  
-  
-  data_[ , "p_numeric"] = readr::parse_number(data_[ ,  p_column]) %>% round(. , 3)
-  
-  data_ <- data_ %>%
-    mutate(is_na_a = is.na(p_numeric))
-  
-  #data_$label_row  =  ifelse(data_$label != "" , T , F)
-  
-  
-  return(  
-    datatable( data_  , 
-               extensions = "Buttons" ,
-               class = c("compact" , "row-border") ,
-               options = list(
-                 columnDefs = list(list(targets = c( label_column , "p_numeric" , "is_na_a"), visible = FALSE))  , 
-                 pageLength = 100 ,  lengthChange = FALSE,
-                 scrollY = "100vh" , scrollX = TRUE , scrollCollapse = T ,  paging = F ,
-                 dom = 'Bfrtip', buttons = c("copy") , 
-                 columnDefs = list(list(className = "dt-center", targets = "_all"))
-               ) ,  rownames = F,
-               caption = title_  )%>%
-      formatStyle(
-        columns = names(data_) ,
-        valueColumns = label_column , 
-        borderTop = styleEqual( c(FALSE , TRUE) , c('none', '2px solid grey'))
-      ) %>%
-    formatStyle(
-      columns = highlite,      # The character/string columns to highlight
-      valueColumns = 'p_numeric' , # The column providing the logic (< 0.05)
-      backgroundColor = styleInterval( c(.05 , 0.06) , c( "yellow" ,   "orange", "transparent"))
-  
-
-    )
-    
-  )
-  
-  
-}
-
-
-
-
-
 
 
 
@@ -187,6 +136,7 @@ extract_summary_stats <- function(df, cols_to_split) {
   
   return(df_out)
 }
+
 
 
 
