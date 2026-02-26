@@ -15,8 +15,8 @@ cosbatch  =  function(data_ , grp_ ,  batch_){
 	for (i in 1:length(batch_list)){
 	  message( paste("Batch:" ,  as.character(i))           ) 
 		tmp =  batch_list[[i]]
-		nRep  =  table(tmp$Group) # group counts
-		tmp =  t(tmp[order(tmp$Group)  , genes]) # sort by group the transpose
+		nRep  =  table(tmp$Group) # group counts in current batch 
+		tmp =  t(tmp[order(tmp$Group)  , genes]) # sort by group in the current batch then transpose
 		##
 		print(dim(tmp))
 		message("Super Sample Calculation")
@@ -54,6 +54,7 @@ cosbatch  =  function(data_ , grp_ ,  batch_){
 
 
 }
+
 
 
 
