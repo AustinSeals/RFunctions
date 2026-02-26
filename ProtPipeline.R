@@ -3,7 +3,7 @@
 #########################
 ## Load Helper Functions
 #######################
-scripts_path  = "RFunctions/"
+scripts_path  = "RFunctions-main/"
 
 source(paste0(scripts_path , "Omics_Meta_Stats.R")   )
 source(paste0(scripts_path , "CosbinWrappers.R")   )
@@ -162,6 +162,7 @@ pipeline_PVCA  =  function(matrix , annot  ,  sample_col ,  batch_col  , factors
 
 
 }
+
 
 
 
