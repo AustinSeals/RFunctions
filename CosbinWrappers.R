@@ -1,6 +1,6 @@
 
 library(dplyr)
-source("H:\\DESKTOP_BACKUP\\RFunctions\\Cosbin_functions_advanced.R")
+source("RFunctions\\Cosbin_functions_advanced.R")
 
 ###############
 
@@ -164,4 +164,5 @@ cosbin_norm  =  function(data_ , group) {
   
   
 }
+
 
