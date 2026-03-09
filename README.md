@@ -19,3 +19,27 @@ Main Packages Required:
 - patchwork
 - proBatch
 - finalfit
+
+
+Run the following code to download all the files in this repo to your current working directory(in new folder 'RFunctions-main'):
+
+
+# Define the download URL for the main branch ZIP
+zip_url <- "https://github.com/AustinSeals/RFunctions/archive/refs/heads/main.zip"
+dest_file <- "RFunctions_main.zip"
+
+tryCatch({
+  # 1. Download the file
+  download.file(url = zip_url, destfile = dest_file, mode = "wb")
+  
+  # 2. Unzip into the current working directory
+  unzip(zipfile = dest_file, exdir = ".")
+  
+  # 3. Clean up the zip file after extraction
+  file.remove(dest_file)
+  
+}, error = function(e) {
+  message("Error: Failed to download or unzip the repository.")
+})
+
+
