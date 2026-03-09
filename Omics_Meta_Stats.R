@@ -5,8 +5,14 @@ library(tibble)
 library(pcaMethods)
 library(ggplot2)
 library(patchwork)
-source('Missing.R') 
 
+source_file  = 'Missing.R'
+tryCatch(
+  source(source_file) , 
+  error = function(e) {
+    message(paste("Error: Failed to source", source_file))
+  }
+)
 
 #' Generate Meta Data Stats for Samples and Features
 #'
@@ -265,6 +271,7 @@ batch_miss_filter67 = function( dat_ , batch_col  , select_cols = 1 , cut_ = 0.6
 # 
 # 
 ##### END example work flow 
+
 
 
 
