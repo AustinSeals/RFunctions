@@ -1,5 +1,5 @@
 
-source("H:\\DESKTOP_BACKUP\\RFunctions\\Cosbin_functions_advanced.R")
+source("Cosbin_functions_advanced.R")
 
 ####### cosbatch - cosbin by batch #################
 
@@ -131,6 +131,7 @@ nipals_batch  =  function(data_ ,batch_){
   final_df = final_df[sample_order , ]
   return(final_df)
 }
+
 
 
 
