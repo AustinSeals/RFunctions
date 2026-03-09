@@ -23,7 +23,7 @@ Main Packages Required:
 
 Run the following code to download all the files in this repo to your current working directory(in new folder 'RFunctions-main'):
 
-
+```r
 zip_url <- "https://github.com/AustinSeals/RFunctions/archive/refs/heads/main.zip"
 dest_file <- "RFunctions_main.zip"
 
@@ -37,4 +37,4 @@ tryCatch({
   message("Error: Failed to download or unzip the repository.")
 })
 
-
+```
