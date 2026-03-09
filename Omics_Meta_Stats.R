@@ -5,13 +5,34 @@ library(tibble)
 library(pcaMethods)
 library(ggplot2)
 library(patchwork)
-source('RFunctions-main/Missing.R') 
+source('Missing.R') 
 
-###################################################################################################################################
-### Generate Meta Data stats for both samples and Features. Samples shold be rows(identified in row names) and Features are Columns
-# sample.col.name  :  Name to apply to the Sample ID column in the results
-# feature.col.name :  Name to apply to the Feature ID column in the results
-###################################################################################################################################
+
+#' Generate Meta Data Stats for Samples and Features
+#'
+#' @description Generates summary statistics and missingness metrics for both samples and features.
+#' Expects data where samples are rows (identified in row names) and features are columns.
+#' Includes LOF (Local Outlier Factor) and PCA leverage calculations to identify outliers.
+#'
+#' @param data A numeric data frame or matrix where rows are samples and columns are features.
+#' @param sample.col.name Character. Name to apply to the Sample ID column in the results. Defaults to "ID".
+#' @param feature.col.name Character. Name to apply to the Feature ID column in the results. Defaults to "Feature".
+#' @param pca_miss_thresh Numeric. The maximum percentage of missing data allowed for a feature to be included in the PCA. Defaults to 100.
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{feature.meta}: A data frame of feature-level statistics.
+#'   \item \code{sample.meta}: A data frame of sample-level statistics, including leverage and outlier flags.
+#'   \item \code{low.thresh}: Count of features with <= 50% missingness.
+#'   \item \code{medium.thresh}: Count of features with > 50% and < 67% missingness.
+#'   \item \code{high.thresh}: Count of features with >= 67% missingness.
+#' }
+#'
+#' @import dplyr
+#' @importFrom pastecs stat.desc
+#' @importFrom tibble rownames_to_column add_column
+#' @importFrom dbscan glosh
+#' @importFrom pcaMethods pca leverage scores
 generate.meta.stats  =  function(data ,  sample.col.name  = "ID" ,  feature.col.name  = "Feature" , pca_miss_thresh = 100){
   
   features.n  =  ncol(data)
@@ -61,13 +82,21 @@ generate.meta.stats  =  function(data ,  sample.col.name  = "ID" ,  feature.col.
   
 }
 
-###########################################################################################################################################
-### Generate informative missing results. For the 
-#  data : Samples should be rows(identified in row names) and Features are Columns
-#  iv_:  are the indices for the features you wants to test in 'data'. 
-# outcome.vector: is a seprate vector containing outcome variable
-# outcome.name :  name to help identify  what the outcome variable was in the analysis 
-############################################################################################################################################
+#' Generate Informative Missing Results
+#'
+#' @description Tests for informative missingness in specified features against an outcome vector.
+#' Depends on \code{informative.missing.bin}.
+#'
+#' @param iv_ Numeric vector. Indices of the features you want to test in \code{data}.
+#' @param outcome.vector A vector containing the outcome variable.
+#' @param outcome.name Character. Name to help identify the outcome variable in the analysis.
+#' @param missing_cut Numeric. Cutoff for missingness. Defaults to 50.
+#' @param pcut Numeric. P-value cutoff for significance. Defaults to 0.05.
+#' @param data A data frame where samples are rows and features are columns.
+#'
+#' @return A data frame containing missingness regression results and FDR adjusted p-values.
+#' @importFrom tibble add_column
+#' @importFrom stats p.adjust
 generate.informative.missing  =  function(iv_ ,  outcome.vector , outcome.name  , missing_cut = 50, pcut = 0.05  ,   data) {
   
   missing.test.df_ =  cbind.data.frame(outcome.vector , data)
@@ -86,9 +115,14 @@ generate.informative.missing  =  function(iv_ ,  outcome.vector , outcome.name  
 }
 
 
-##############################################################################################################################
-### Combind Feature Meta Stats and Missing regression data. Supply meta stats first and missing regrssion results second
-################################################################################################################################
+#' Combine Feature Meta Data
+#'
+#' @description Combines Feature Meta Stats and Missing regression data.
+#'
+#' @param feature.meta.df Data frame containing feature meta stats.
+#' @param informative.missing.df Data frame containing missing regression results.
+#'
+#' @return A combined data frame.
 combine.feature.meta.data  =  function(feature.meta.df  ,  informative.missing.df) {
   
   return(cbind.data.frame(feature.meta.df ,  informative.missing.df[ , 2: ncol(informative.missing.df) ]   ))
@@ -98,22 +132,34 @@ combine.feature.meta.data  =  function(feature.meta.df  ,  informative.missing.d
 
 
 
-
-####################################################################################################
-##                   Missingness by Batch
-#####################################################################################################################
-
-### batch missingness filter
+#' Calculate Missingness Proportion
+#'
+#' @param .x A vector.
+#' @return A numeric value representing the proportion of missing values.
+#' @export
 miss = function(.x ) {
   sum(is.na(.x)) / length(.x)
 }
 
+
+
+#' Check if All Values Meet Threshold (<= 0.5)
+#'
+#' @param x A numeric vector.
+#' @param cut Numeric threshold. Defaults to 0.5.
+#' @return Boolean.
 meets_thresh  = function(x , cut = 0.5) {
   all(x  <= cut)
   
 }
 
 
+
+#' Check if All Values Meet Threshold (< 0.67)
+#'
+#' @param x A numeric vector.
+#' @param cut Numeric threshold. Defaults to 0.67. can be adujusted
+#' @return Boolean.
 meets_thresh67  = function(x , cut = 0.67) {
   all(x  < cut)
   
@@ -121,7 +167,16 @@ meets_thresh67  = function(x , cut = 0.67) {
 
 
 
-
+#' Filter by Batch Missingness (50% Threshold)
+#'
+#' @description Groups data by batch and identifies features that meet a 50% missingness threshold across all batches.
+#'
+#' @param dat_ Data frame.
+#' @param batch_col The unquoted name of the column containing batch identifiers.
+#' @param select_cols Vector of column names or indices to evaluate. Defaults to 1.
+#'
+#' @return A list containing \code{good_vars} (names of variables meeting the threshold) and \code{smry} (a summarized data frame).
+#' @import dplyr
 batch_miss_filter = function( dat_ , batch_col   , select_cols = 1 ) {
   
   miss_smry  = dat_ %>% group_by({{batch_col}}) %>%
@@ -137,12 +192,22 @@ batch_miss_filter = function( dat_ , batch_col   , select_cols = 1 ) {
 
 
 
-####
-batch_miss_filter67 = function( dat_ , batch_col  , select_cols = 1 ) {
+
+#' Filter by Batch Missingness (67% Threshold)
+#'
+#' @description Groups data by batch and identifies features that meet a 67% missingness threshold across all batches.
+#'
+#' @param dat_ Data frame.
+#' @param batch_col The unquoted name of the column containing batch identifiers.
+#' @param select_cols Vector of column names or indices to evaluate. Defaults to 1.
+#' @param cut_ Numeric threshold for missing rate per batch. Defaults to 0.67. can be adujusted
+#' @return A list containing \code{good_vars} (names of variables meeting the threshold) and \code{smry} (a summarized data frame).
+#' @import dplyr
+batch_miss_filter67 = function( dat_ , batch_col  , select_cols = 1 , cut_ = 0.67 ) {
   miss_smry  = dat_ %>% group_by({{batch_col}}) %>%
     summarise(across( all_of(select_cols) ,  miss)   )
   
-  good_vars  = miss_smry[,sapply(miss_smry, meets_thresh67 )] %>% colnames()
+  good_vars  = miss_smry[,sapply(miss_smry, meets_thresh67 , cut  = cut_   )] %>% colnames()
   #good_vars = good_vars %in% select_cols
   
   return(  list( `good_vars` = good_vars ,  `smry` =miss_smry )    )
@@ -200,6 +265,7 @@ batch_miss_filter67 = function( dat_ , batch_col  , select_cols = 1 ) {
 # 
 # 
 ##### END example work flow 
+
 
 
 
