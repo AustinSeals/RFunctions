@@ -25,7 +25,7 @@ Run the following code to download all the files in this repo to your current wo
 
 ```r
 
-# Define the download URL for this rep for the main branch ZIP
+# Define the download URL for this repo. A ZIP file
 zip_url <- "https://github.com/AustinSeals/RFunctions/archive/refs/heads/main.zip"
 dest_file <- "RFunctions_main.zip"
 
