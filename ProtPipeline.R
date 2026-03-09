@@ -141,60 +141,6 @@ prot_pipeline =  function(BatchID  , PhenoType    , expr_data ,  mean_only = T ,
 
 
 
-pipeline_boxplot=  function(matrix , annot  ,  sample_col ,  batch_col  , factors) {
-  
-  annot$order = 1:nrow(annot)
-  color_list = sample_annotation_to_colors(annot  ,  factor_columns = c(batch_col,  factors) , 
-                                           numeric_columns = 'order')
-  
-  proBatch::matrix_to_long(t(matrix) , 
-                           sample_annotation = annot , 
-                           sample_id_col = sample_col) -> long
-  
-  longLog =  long
-  longLog$Intensity  = log2(longLog$Intensity + 1)
-  
-  plot_boxplot(longLog, annot,
-               batch_col = batch_col, color_scheme = color_list[[batch_col]] , sample_id_col = sample_col  )
-  
-  
-}
-
-
-
-
-
-pipeline_dendro=  function(matrix , annot  ,  sample_col ,  batch_col  , factors) {
-  
-  annot$order = 1:nrow(annot)
-  color_list = sample_annotation_to_colors(annot  ,  factor_columns = c(batch_col,  factors) , 
-                                           numeric_columns = 'order')
-  
-  plot_hierarchical_clustering( t(matrix) , 
-                                sample_annotation = annot ,
-                                sample_id_col = sample_col  , 
-                                color_list = color_list , 
-                                factors_to_plot = c("BatchID" , factors) , 
-                                distance = 'euclidean', agglomeration = 'complete', 
-                                label_samples = FALSE)
-  
-  
-}
-
-
-
-pipeline_PVCA  =  function(matrix , annot  ,  sample_col ,  batch_col  , factors) {
-  mat = t(matrix)
-  rownames(annot) =  NULL
-  plot_PVCA(mat , annot,
-            technical_factors = c(batch_col),
-            biological_factors = c(factors) ,  
-            sample_id_col = sample_col)
-
-
-}
-
-
 
 
 
