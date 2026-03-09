@@ -5,8 +5,6 @@ library(stringr)
 library(tidyr)
 library(rlang)
 
-# source("H:/DESKTOP_BACKUP/RFunctions/finalfit_table_wrappers.R", echo=TRUE)
-
 #' Print a Vector with Indices
 #'
 #' @description Iterates through a given vector and prints each element alongside its index.
@@ -181,6 +179,7 @@ extract_summary_stats <- function(df, cols_to_split) {
   
   return(df_out)
 }
+
 
 
 
