@@ -9,11 +9,42 @@ source(paste0(scripts_path , "Omics_Meta_Stats.R")   )
 source(paste0(scripts_path , "CosbinWrappers.R")   )
 source(paste0(scripts_path ,  "Cosbatch.R"))
 
-
-#######################################
-### Full Pipeline 
-########################################
-
+#' Full pre-processing pipeline
+#'
+#'  @description
+#'  1. Calculating which features have <50% and <67% missing in each batch
+#'  2. Total Count Normaliztion of 50% Data the impute
+#'  3. Across Batch Cosbin Normalize the <50% Data
+#'  4. Apply <50% Global Total Count Normalization Factors to 67% Data and Impute
+#'  5. Apply <50% Across Cosbin Factors to <67%  Global TC normed and imputed data
+#'  6. Run Combat(sva::Combat) - mean only adjusment
+#'  7. Final Nipals Imputation
+#'
+#'  @param DatchID a vector. the bactch id for each sample.
+#'  @param PhemoType a vector. the group or outcomes for the samples.
+#'  @param expre_data the expression data matrix.  rows are samples.
+#'  @param  mean_only  a boolean. whether or not to do mean only combat adjustment(sva::ComBat) or mean and variance adjustment.  default is TRUE.
+#'  @param model a model matix to pass to sva::ComBat for addtitional adjustments.
+#'
+#'  @return A list containing:
+#' \itemize{
+#'   \item \code{vars50}: A list of featues with <50% missingness in all bataches.
+#'   \item \code{vars67}: A list of featues with <67% missingness in all bataches.
+#'   \item \code{tc_normed_50}: scalineg factors from the <50% missing tc normed data.
+#'   \item \code{cosbin_factors50}: scaline factors from the <50% missing TC normed, imputed and 'by  batch' cosbine normed data.
+#'   \item \code{iCEGs}: Common iCEGS found from the 'by batch' cosbin.
+#'   \item \code{expr50_tc_impute}: <50% missind data globacl total count norm and  imputation data matrix result.
+#'   \item \code{expr50_tc_impute_cosbin}:<50% missing 'by batch' cosbin data matrix result.
+#'   \item \code{expr67_tc_impute}: <67% missind data after imputation and application of global TC normed factors.
+#'   \item \code{expr67_tc_impute_cosbin}: <67% missind data after imputation and application of global TC normed factors and application of 'by batch' scaling factors from <50% data.
+#'   \item \code{expr67_tc_impute_cosbin_combat}: <67% missind dataset after combat adjustment and previous normaliztion steps. .
+#'   \item \code{expr67_final_nipals}: <67% missing dataset . final imputation .
+#'
+#' }
+#'
+#'  @import dplyr
+#'  @import OmicStats
+#'  @importFrom sva Combat
 prot_pipeline =  function(BatchID  , PhenoType    , expr_data ,  mean_only = T , model = NULL  ) {
   
   
@@ -162,6 +193,7 @@ pipeline_PVCA  =  function(matrix , annot  ,  sample_col ,  batch_col  , factors
 
 
 }
+
 
 
 
