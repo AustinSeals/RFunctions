@@ -15,6 +15,7 @@ Main Packages Required:
 - stringr
 - rlang
 - tidyr
+- limma
 
 
 Run the following code to download all the files in this repo to your current working directory(in new folder 'RFunctions-main'):
