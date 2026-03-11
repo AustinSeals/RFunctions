@@ -4,8 +4,9 @@ Do not think of this a R package.
 
 These functions were written in R  4.4.1.
 
-Main Packages Required:
+Main Packages used(script dependent. not every script uses all of these):
 - dplyr
+- stats
 - tibble
 - pcaMethods
 - pastecs
