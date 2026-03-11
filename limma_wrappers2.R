@@ -22,6 +22,7 @@ library(dplyr)
 #'   gene IDs, significance flags, and descriptive statistics.
 #'   \item \code{HITS}: A character vector of gene names that passed the FDR threshold.
 #'   \item \code{FIT}: The \code{MArrayLM} object returned by \code{eBayes}.
+#'   \item \code{STATS}: A dataframe. Descriptive stats on each gene. 
 #' }
 #' 
 #' @import limma
@@ -43,15 +44,13 @@ limma_wrapp = function(design_mat, expr_data, coefs = c(2), threshold = 0.01) {
   # Format for export
   topDiff <- tibble::rownames_to_column(topDiff, "Gene")
   
-  # Note: extract_geneID must be defined elsewhere in your package/environment
-  topDiff$Gene2 <- extract_geneID(topDiff$Gene)
   
   names(topDiff)[6] <- 'FDR'
   topDiff$Is.FDR.Significant <- ifelse(topDiff$FDR < threshold, 1, 0)
   
   # Move Gene2 column and calculate rank
   topDiff <- topDiff %>% 
-    dplyr::relocate(Gene2, .before = logFC) %>%
+    #dplyr::relocate(Gene2, .before = logFC) %>%
     dplyr::mutate(PCT_RANK_FDR = dplyr::percent_rank(FDR))
   
   # Calculate descriptive statistics
@@ -64,6 +63,8 @@ limma_wrapp = function(design_mat, expr_data, coefs = c(2), threshold = 0.01) {
   return(list(
     `FULL_RESULTS` = topDiff, 
     `HITS` = limmaHits,
-    `FIT` = fit.cont
+    `FIT` = fit.cont ,
+    `STATS` = desc_
   ))
+
 }
