@@ -11,6 +11,10 @@ Main Packages Required:
 - pastecs
 - finalfit
 - ggplot2
+- DT
+- stringr
+- rlang
+- tidyr
 
 
 Run the following code to download all the files in this repo to your current working directory(in new folder 'RFunctions-main'):
