@@ -10,6 +10,7 @@ Main Packages Required:
 - pcaMethods
 - pastecs
 - finalfit
+- ggplot2
 
 
 Run the following code to download all the files in this repo to your current working directory(in new folder 'RFunctions-main'):
