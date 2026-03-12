@@ -51,8 +51,8 @@ print_table_final_fit_simple  =   function(data_ ,  label_column = "label",  tit
              ) ,  rownames = F,
              caption = title_  )%>%
     formatStyle(
-      columns = names(data_) ,
-      valueColumns = label_column , 
+      columns = colnames(data_) ,
+      valueColumns = "label_row" , 
       borderTop = styleEqual( c(FALSE , TRUE) , c('none', '2px solid grey'))
     )
   
