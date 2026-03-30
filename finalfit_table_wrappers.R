@@ -234,7 +234,8 @@ tidy_binary_factorlist <- function(.data, replacement_label = "Present") {
     
     # 7. Final Cleanup
     ungroup() %>%
-    select(-is_binary)
+    select(-is_binary) %>%
+    as.data.frame()
 }
 
 
