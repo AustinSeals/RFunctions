@@ -183,7 +183,59 @@ extract_summary_stats <- function(df, cols_to_split) {
 
 
 
+#' Tidy finalfit factorlist for binary variables
+#'
+#' @description
+#' This function takes the output of `finalfit::summary_factorlist()` and collapses
+#' binary variables into a single row. It preserves metadata (p-values, Total N, Missing N),
+#' bolds the variable labels, and renames the level of interest.
+#'
+#' @param .data A dataframe/tibble output from the `summary_factorlist` function.
+#' @param replacement_label Character. The text to display for the kept binary level. 
+#' Default is "Present".
+#'
+#' @return A tibble formatted with bold labels and collapsed binary rows.
+#' @export
+#'
+#' @examples
+#' # df %>% 
+#' #   summary_factorlist(dependent, explanatory, p = TRUE) %>% 
+#' #   tidy_binary_factorlist(replacement_label = "Yes")
+tidy_binary_factorlist <- function(.data, replacement_label = "Present") {
 
+  .data %>%
+    # 1. Handle labels: Convert empty strings to NA and fill down 
+    # to associate levels with their parent variable.
+    mutate(label = na_if(label, "")) %>%
+    fill(label, .direction = "down") %>%
+    
+    # 2. Identify variables with exactly 2 rows (binary)
+    group_by(label) %>%
+    mutate(
+      is_binary = n() == 2
+    ) %>%
+    
+    # 3. Migrate metadata: finalfit puts p, Total N, and Missing N on the 
+    # first row. We move them to the second row before deleting the first.
+    mutate(across(any_of(c("p", "Total N", "Missing N")), 
+                  ~ if_else(is_binary, first(.[. != "" & !is.na(.)]), .))) %>%
+    
+    # 4. Filter: For binary variables, remove the first row (reference level).
+    # Keeps all rows for continuous (1 row) or multi-level (3+ rows) variables.
+    filter(!(is_binary & row_number() == 1)) %>%
+    
+    # 5. Rename the remaining level (e.g., "1" or "Yes") to the custom label.
+    mutate(levels = if_else(is_binary, replacement_label, levels)) %>%
+    
+    # 6. Reformat Label Column: 
+    # - Wrap the first row of every group in double asterisks for bolding.
+    # - Set subsequent rows to empty strings to match finalfit style.
+    mutate(label = if_else(row_number() == 1, paste0("**", label, "**"), "")) %>%
+    
+    # 7. Final Cleanup
+    ungroup() %>%
+    select(-is_binary)
+}
 
 
 
