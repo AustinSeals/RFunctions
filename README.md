@@ -32,7 +32,7 @@ tryCatch({
   download.file(url = zip_url, destfile = dest_file, mode = "wb")
   
   # 2. Unzip into the current working directory
-  unzip(zipfile = dest_file, exdir = ".")
+  unzip(zipfile = dest_file, exdir = "." , overwrite = F)
   
   # 3. Clean up the zip file after extraction
   file.remove(dest_file)
