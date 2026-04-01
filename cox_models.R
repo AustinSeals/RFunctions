@@ -196,7 +196,7 @@ plot_cox_forest <- function(results_df, title = "Hazard Ratios (95% CI)") {
     # Labs and Annotation
     ggplot2::labs(
       title = title,
-      subtitle = "<- Decreased Hazard (Protective) | Increased Hazard (Risk) ->",
+      subtitle = NULL,
       x = "Hazard Ratio (Log Scale)",
       y = NULL
     ) +
