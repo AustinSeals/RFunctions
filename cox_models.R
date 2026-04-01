@@ -1,31 +1,23 @@
 library(survival)
-
-#' Run Univariate Cox Models adjusted for a fixed set of covariates
+#' Run Adjusted Univariate Cox Models with PH Assumption Check
 #'
 #' @param df A dataframe containing the data.
 #' @param time_var A string for the time-to-event variable.
 #' @param event_var A string for the status/event variable (1=event, 0=censored).
 #' @param predictors A character vector of the main predictors of interest.
-#' @param covariates A character vector of variables to adjust for in every model.
-#' @return A tidy dataframe of the adjusted Hazard Ratios for the main predictors.
+#' @param covariates A character vector of variables to adjust for.
+#' @return A tidy dataframe including Hazard Ratios and PH Assumption status.
 run_cox_adjusted_models <- function(df, time_var, event_var, predictors, covariates = NULL) {
   
-  # Ensure the survival package is available
   if (!requireNamespace("survival", quietly = TRUE)) {
-    stop("The 'survival' package is required. Please install it.")
+    stop("The 'survival' package is required.")
   }
   
   results_list <- list()
-  
-  # Create the string for covariates (e.g., "+ age + sex")
-  covar_string <- ""
-  if (!is.null(covariates) && length(covariates) > 0) {
-    covar_string <- paste(" +", paste(covariates, collapse = " + "))
-  }
+  covar_string <- if (!is.null(covariates)) paste(" +", paste(covariates, collapse = " + ")) else ""
   
   for (pred in predictors) {
     
-    # Construct Cox formula: Surv(time, event) ~ predictor + adj1 + adj2...
     formula_str <- paste0("survival::Surv(", time_var, ", ", event_var, ") ~ ", pred, covar_string)
     
     model <- tryCatch({
@@ -37,32 +29,35 @@ run_cox_adjusted_models <- function(df, time_var, event_var, predictors, covaria
     
     if (is.null(model)) next
     
-    # Extract coefficients and Confidence Intervals
-    # Note: Cox models in R use summary(model)$conf.int for HR and CIs directly
-    summ <- summary(model)
-    coef_table <- summ$coefficients  # Contains Beta, HR, se, z, p
-    ci_table <- summ$conf.int        # Contains HR, exp(-beta), lower .95, upper .95
+    # --- PH Assumption Test (Schoenfeld residuals) ---
+    # cox.zph returns a test for each term + a global test.
+    ph_test <- survival::cox.zph(model)
+    ph_p_values <- ph_test$table[, "p"]
     
-    # --- The Selection Logic ---
-    # Isolate only the rows belonging to the main 'pred'
+    # Extract model stats
+    summ <- summary(model)
+    coef_table <- summ$coefficients
+    ci_table <- summ$conf.int
+    
+    # Isolate rows belonging to the main 'pred'
     all_rows <- rownames(coef_table)
     pred_rows_idx <- which(grepl(paste0("^", pred), all_rows))
     
     if (length(pred_rows_idx) == 0) next
     
-    # Logic for Reference Level
+    # Reference level logic
     ref_level <- "N/A (Continuous)"
     if (is.factor(df[[pred]]) || is.character(df[[pred]])) {
       ref_level <- levels(as.factor(df[[pred]]))[1]
     }
     
+    # Map PH test results back to the specific levels of our predictor
+    # Note: ph_test$table rows match the model coefficients order
+    ph_results <- ifelse(ph_p_values[pred_rows_idx] >= 0.05, "Yes", "No")
+    
     # Clean labels
     levels_detected <- sub(paste0("^", pred), "", all_rows[pred_rows_idx])
-    display_names <- ifelse(
-      levels_detected == "", 
-      pred, 
-      paste0(pred, " (", levels_detected, " vs ", ref_level, ")")
-    )
+    display_names <- ifelse(levels_detected == "", pred, paste0(pred, " (", levels_detected, " vs ", ref_level, ")"))
     
     # Build dataframe
     pred_df <- data.frame(
@@ -70,11 +65,12 @@ run_cox_adjusted_models <- function(df, time_var, event_var, predictors, covaria
       Predictor_Base = pred,
       Comparison_Level = ifelse(levels_detected == "", "Continuous", levels_detected),
       Reference_Level = ref_level,
-      Beta = coef_table[pred_rows_idx, "coef"],
       Hazard_Ratio = ci_table[pred_rows_idx, "exp(coef)"],
       Lower_CI_95 = ci_table[pred_rows_idx, "lower .95"],
       Upper_CI_95 = ci_table[pred_rows_idx, "upper .95"],
       P_Value = coef_table[pred_rows_idx, "Pr(>|z|)"],
+      PH_Assumption_Met = ph_results,  # NEW COLUMN
+      PH_Test_P = ph_p_values[pred_rows_idx], # Added for transparency
       Adjusted_For = paste(covariates, collapse = ", "),
       stringsAsFactors = FALSE
     )
@@ -88,59 +84,66 @@ run_cox_adjusted_models <- function(df, time_var, event_var, predictors, covaria
 }
 
 
-#' Perform Multivariable Cox Proportional Hazards Regression
+
+#' Perform Multivariable Cox Regression with PH Assumption Check
 #'
 #' @param df A dataframe containing the data.
 #' @param time_var A string for the time-to-event variable.
 #' @param event_var A string for the status/event variable (1=event, 0=censored).
 #' @param predictors A character vector of all predictor variable names to include.
-#' @return A tidy dataframe with adjusted Beta, HR, CIs, and Reference Level info.
-run_multivariable_cox <- function(df, time_var, event_var, predictors) {
+#' @return A tidy dataframe with adjusted HRs and PH Assumption status.
+run_multivariable_cox_ph <- function(df, time_var, event_var, predictors) {
   
   if (!requireNamespace("survival", quietly = TRUE)) {
-    stop("The 'survival' package is required. Please install it.")
+    stop("The 'survival' package is required.")
   }
   
-  # Construct the full formula: Surv(time, event) ~ pred1 + pred2 + ...
+  # 1. Build and Fit the Multivariable Model
   formula_str <- paste0("survival::Surv(", time_var, ", ", event_var, ") ~ ", 
                         paste(predictors, collapse = " + "))
   
-  # Fit the single multivariable Cox model
   model <- tryCatch({
     survival::coxph(as.formula(formula_str), data = df)
   }, error = function(e) {
-    stop(paste("The multivariable Cox model failed. Check for collinearity or sparse events.\nError:", e$message))
+    stop(paste("The multivariable Cox model failed.\nError:", e$message))
   })
   
-  # Extract summary statistics
+  # 2. Run the PH Assumption Test (Schoenfeld residuals)
+  # This calculates p-values for every term in the model
+  ph_test <- survival::cox.zph(model)
+  ph_table <- ph_test$table
+  
+  # 3. Extract standard model statistics
   summ <- summary(model)
   coef_table <- summ$coefficients
   ci_table <- summ$conf.int
-  
-  # Get term names (e.g., "age", "sexFemale")
   raw_terms <- rownames(coef_table)
+  
   results_list <- list()
   
   for (i in seq_along(raw_terms)) {
     term_name <- raw_terms[i]
     
-    # Identify which base predictor this term belongs to
+    # Identify base predictor
     base_pred <- predictors[sapply(predictors, function(p) grepl(paste0("^", p), term_name))][1]
     
-    # Logic for Reference Level
+    # Reference level logic
     ref_level <- "N/A (Continuous)"
     if (is.factor(df[[base_pred]]) || is.character(df[[base_pred]])) {
       ref_level <- levels(as.factor(df[[base_pred]]))[1]
     }
     
-    # Clean labels: "sex (Female vs Male)"
+    # Clean labels
     level_detected <- sub(paste0("^", base_pred), "", term_name)
-    
     display_name <- ifelse(
       level_detected == "", 
       base_pred, 
       paste0(base_pred, " (", level_detected, " vs ", ref_level, ")")
     )
+    
+    # Extract PH p-value for THIS specific term
+    # Note: the row names in ph_table match the model coefficients
+    ph_p <- ph_table[term_name, "p"]
     
     results_list[[i]] <- data.frame(
       Variable = display_name,
@@ -152,14 +155,29 @@ run_multivariable_cox <- function(df, time_var, event_var, predictors) {
       Lower_CI_95 = ci_table[i, "lower .95"],
       Upper_CI_95 = ci_table[i, "upper .95"],
       P_Value = coef_table[i, "Pr(>|z|)"],
+      PH_Assumption_Met = ifelse(ph_p >= 0.05, "Yes", "No"),
+      PH_Test_P = ph_p,
       stringsAsFactors = FALSE
     )
   }
   
   final_df <- do.call(rbind, results_list)
+  
+  # Add the Global Model PH Test as an attribute to the dataframe
+  # This is useful for checking if the model as a whole is valid
+  global_p <- ph_table["GLOBAL", "p"]
+  attr(final_df, "Global_PH_P") <- global_p
+  
+  message(paste("Global PH Assumption Check P-value:", round(global_p, 4)))
+  
   rownames(final_df) <- NULL
   return(final_df)
 }
+
+
+
+
+
 
 
 
