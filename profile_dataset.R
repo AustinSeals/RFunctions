@@ -61,3 +61,48 @@ profile_dataset <- function(df) {
   rownames(final_profile) <- NULL
   return(final_profile)
 }
+
+
+
+
+
+#' Automatically convert likely categorical variables to factors
+#'
+#' @param df A dataframe.
+#' @param max_levels The maximum number of unique values a numeric variable 
+#'                   can have to be considered a factor (default is 10).
+#' @param exclude A character vector of column names to skip (e.g., ID columns).
+#' @return A dataframe with updated column classes.
+auto_factorize <- function(df, max_levels = 10, exclude = NULL) {
+  
+  # 1. Run our profile function to get the "Inferred_Type"
+  profile <- profile_dataset(df)
+  
+  # 2. Identify variables that should be factors
+  # Criteria: Is already a character OR is Binary OR is Numeric with few levels
+  vars_to_factor <- profile$Variable[
+    profile$Inferred_Type %in% c("Binary", "Categorical (Numeric Coded?)", "Categorical")
+  ]
+  
+  # 3. Filter out excluded variables and those with zero variance (constants)
+  vars_to_factor <- setdiff(vars_to_factor, exclude)
+  vars_to_factor <- setdiff(vars_to_factor, profile$Variable[profile$Inferred_Type == "Constant (Zero Variance)"])
+  
+  # 4. Filter by the user-defined max_levels threshold for numeric variables
+  # This prevents accidentally factorizing things like 'Age' if it only has 12 unique values.
+  final_vars <- vars_to_factor[sapply(vars_to_factor, function(v) {
+    length(unique(na.omit(df[[v]]))) <= max_levels
+  })]
+  
+  if (length(final_vars) == 0) {
+    message("No variables met the criteria for factor conversion.")
+    return(df)
+  }
+  
+  # 5. Perform the conversion
+  message(paste("Converting the following to factors:", paste(final_vars, collapse = ", ")))
+  
+  df[final_vars] <- lapply(df[final_vars], as.factor)
+  
+  return(df)
+}
