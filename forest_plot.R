@@ -23,7 +23,7 @@ plot_forest_final <- function(df,
                               y_title = NULL,
                               title = "Forest Plot",
                               log_scale = TRUE
-                              x_breaks  =  c(0.1, 0.5, 1, 2, 5, 10) , 
+                              x_breaks  =  c(0.1, 0.5, 1, 2, 5, 10) 
                              ) {
   
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
