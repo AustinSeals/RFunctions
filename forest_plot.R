@@ -22,7 +22,7 @@ plot_forest_final <- function(df,
                               x_title = "Estimate (95% CI)",
                               y_title = NULL,
                               title = "Forest Plot",
-                              log_scale = TRUE
+                              log_scale = TRUE , 
                               x_breaks  =  c(0.1, 0.5, 1, 2, 5, 10) 
                              ) {
   
