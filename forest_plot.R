@@ -1,4 +1,4 @@
-#' Final Agnostic Forest Plot with Optional Coloring
+#' Final Agnostic Forest Plot (Legend Suppressed)
 #'
 #' @param df The results dataframe.
 #' @param color_var The column name to use for coloring (e.g., "Predictor_Base"). 
@@ -11,7 +11,6 @@
 #' @param y_title Custom string for the Y-axis title.
 #' @param title Custom string for the plot title.
 #' @param log_scale Logical; TRUE for OR/HR, FALSE for linear models.
-#' @param x_breaks breaks for the log scale x-axis . Defaault c(0.1, 0.5, 1, 2, 5, 10) 
 #' @return A ggplot object.
 plot_forest_final <- function(df, 
                               color_var = NULL,
@@ -22,9 +21,7 @@ plot_forest_final <- function(df,
                               x_title = "Estimate (95% CI)",
                               y_title = NULL,
                               title = "Forest Plot",
-                              log_scale = TRUE , 
-                              x_breaks  =  c(0.1, 0.5, 1, 2, 5, 10) 
-                             ) {
+                              log_scale = TRUE) {
   
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Please install 'ggplot2'.")
@@ -39,18 +36,16 @@ plot_forest_final <- function(df,
     ggplot2::geom_vline(xintercept = ifelse(log_scale, 1, 0), 
                         linetype = "dashed", color = "darkred", linewidth = 0.8)
 
-  # Logic for Conditional Coloring
+  # Logic for Conditional Coloring (Legend specifically suppressed in geoms)
   if (!is.null(color_var) && color_var %in% colnames(df)) {
-    # If color_var is provided and exists, map it to color
     p <- p + 
       ggplot2::geom_errorbarh(ggplot2::aes(xmin = .data[[low_col]], 
                                           xmax = .data[[high_col]], 
                                           color = .data[[color_var]]), 
-                              height = 0.2, linewidth = 1) +
-      ggplot2::geom_point(ggplot2::aes(color = .data[[color_var]]), size = 3.5) +
-      ggplot2::labs(color = color_var)
+                              height = 0.2, linewidth = 1, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(color = .data[[color_var]]), 
+                          size = 3.5, show.legend = FALSE)
   } else {
-    # If no color_var is specified, use a default single color
     p <- p + 
       ggplot2::geom_errorbarh(ggplot2::aes(xmin = .data[[low_col]], 
                                           xmax = .data[[high_col]]), 
@@ -58,7 +53,7 @@ plot_forest_final <- function(df,
       ggplot2::geom_point(color = "midnightblue", size = 3.5)
   }
 
-  # Add labels and theme
+  # Add labels and global theme settings
   p <- p + 
     ggplot2::labs(title = title, x = x_title, y = y_title) +
     ggplot2::theme_minimal() +
@@ -66,11 +61,12 @@ plot_forest_final <- function(df,
       plot.title = ggplot2::element_text(face = "bold", size = 14),
       axis.text.y = ggplot2::element_text(size = 10, face = "bold", color = "black"),
       panel.grid.minor = ggplot2::element_blank(),
-      legend.position = if(is.null(color_var)) "none" else "right"
+      # Absolute suppression of the legend
+      legend.position = "none" 
     )
 
   if (log_scale) {
-    p <- p + ggplot2::scale_x_log10(breaks = x_breaks)
+    p <- p + ggplot2::scale_x_log10(breaks = c(0.1, 0.5, 1, 2, 5, 10))
   }
 
   return(p)
