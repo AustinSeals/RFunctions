@@ -1,3 +1,78 @@
+#' Create a finalfit-style summary table for repeated measures data
+#'
+#' @description
+#' Generates a beautifully formatted summary table comparing explanatory variables 
+#' across the levels of a dependent categorical variable, specifically designed for 
+#' clustered or repeated-measures data. It mimics the output matrix of 
+#' \code{finalfit::summary_factorlist()} while calculating p-values that correctly 
+#' account for within-subject correlation using mixed-effects models.
+#'
+#' @details
+#' The function automatically detects whether an explanatory variable is continuous 
+#' or categorical and fits the appropriate mixed-effects model to generate a Type III Wald 
+#' Chi-Square p-value via \code{car::Anova()}:
+#' \itemize{
+#'   \item \strong{Continuous (mean):} Fits a linear mixed model (\code{lmer}).
+#'   \item \strong{Continuous (median):} Fits a rank-transformed linear mixed model 
+#'         (\code{lmer(rank(x) ~ ...)}) to handle skewness and unbalanced/missing repeated measures robustly.
+#'   \item \strong{Categorical:} Fits a binomial generalized linear mixed model (\code{glmer}).
+#' }
+#' 
+#' @param data A data frame or tibble containing the dataset.
+#' @param dependent Character vector of length 1. The name of the categorical grouping 
+#'   variable (e.g., Treatment Arm).
+#' @param explanatory Character vector. The names of the variables to be summarized 
+#'   and tested across the dependent variable.
+#' @param random_effect Character vector of length 1. The name of the clustering 
+#'   variable (e.g., Patient ID, Subject ID) to be used as a random intercept.
+#' @param cont_summary Character string. Either \code{"mean"} to summarize continuous 
+#'   variables as Mean (SD), or \code{"median"} for Median [IQR]. Default is \code{"mean"}.
+#' @param digits Integer. The number of decimal places to display for numeric 
+#'   summaries and percentages. Default is \code{1}.
+#' @param col_pct Logical. If \code{TRUE}, categorical summaries display column 
+#'   percentages. If \code{FALSE}, displays row percentages. Default is \code{TRUE}.
+#' @param total_col Logical. If \code{TRUE}, includes an overall total column 
+#'   combining all groups. Default is \code{TRUE}.
+#' @param add_missing Logical. If \code{TRUE}, appends a row showing the count of 
+#'   \code{NA} (missing) values for each explanatory variable. Default is \code{TRUE}.
+#'
+#' @return A \code{tibble} containing the formatted summary statistics and p-values, 
+#'   structured with columns for the variable label, level, dependent group levels, 
+#'   total (optional), and the p-value.
+#'
+#' @importFrom lme4 lmer glmer
+#' @importFrom car Anova
+#' @importFrom dplyr filter group_by summarise mutate select bind_rows bind_cols if_else all_of
+#' @importFrom tidyr pivot_wider
+#' @importFrom rlang sym
+#' 
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(42)
+#' mock_data <- data.frame(
+#'   PatientID = rep(1:100, each = 3),
+#'   Timepoint = rep(c("Baseline", "Month 1", "Month 6"), 100),
+#'   Group = rep(sample(c("Drug A", "Placebo"), 100, replace = TRUE), each = 3),
+#'   HeartRate = rnorm(300, mean = 75, sd = 10),
+#'   Relapse = sample(c("Yes", "No"), 300, replace = TRUE)
+#' )
+#'
+#' # Generate table with medians and column percentages
+#' summary_table <- summary_mixed_factorlist(
+#'   data = mock_data,
+#'   dependent = "Group",
+#'   explanatory = c("HeartRate", "Relapse"),
+#'   random_effect = "PatientID",
+#'   cont_summary = "median",
+#'   col_pct = TRUE
+#' )
+#' 
+#' print(summary_table)
+#' }
+
+
 library(lme4)
 library(car)
 library(dplyr)
