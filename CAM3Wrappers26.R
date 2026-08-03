@@ -158,8 +158,8 @@ run_CAM3_wrapper <- function(data, K, dim.rdc = 10, cos.thres = 0.95,  ...) {
   })
   
   # 4. Extract SG (Specific Genes / Marker Genes) list
-  SG_list = cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[1]]
-  
+  SG_list = CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[1]]
+  SG_df =  CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[2]]
   # 5. Calculate the average of all SGs per Source per observation in the original data
   num_obs <- ncol(data)
   num_sources <- length(SG_list)
@@ -206,6 +206,7 @@ run_CAM3_wrapper <- function(data, K, dim.rdc = 10, cos.thres = 0.95,  ...) {
     S_matrix = S_mat,
     SG_list = SG_list,
     SG_averages = SG_averages,
+    SG_df = as.data.frame(SG_df) , 
     params =  cam_params
   ))
 }
@@ -231,7 +232,7 @@ run_CAM3_wrapper <- function(data, K, dim.rdc = 10, cos.thres = 0.95,  ...) {
 #'   - \code{S_matrix}: Estimated signature matrix.
 #'   - \code{SG_list}: List of Specific Genes (marker genes) for each source at the specified cos threshold. 
 #'   - \code{SG_averages}: Matrix of (Observations x Sources) with the average SG expression.
-extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95,) {
+extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95) {
   # 1. Check for the package (looks for CAM3 first, then debCAM)
   pkg <- NULL
   if (requireNamespace("CAM3", quietly = TRUE)) {
@@ -259,8 +260,8 @@ extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95,) {
   })
   
   # 3. Extract SG (Specific Genes / Marker Genes) list
-  SG_list = cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[1]]
-  
+  SG_list = CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[1]]
+  SG_df =  CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[2]]
   # 4. Calculate the average of all SGs per Source per observation in the original data
   num_obs <- ncol(data)
   num_sources <- length(SG_list)
@@ -306,7 +307,8 @@ extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95,) {
     A_matrix = A_mat,
     S_matrix = S_mat,
     SG_list = SG_list,
-    SG_averages = SG_averages,
+    SG_df = as.data.frame(SG_df) , 
+    SG_averages = SG_averages
   ))
 }
 
