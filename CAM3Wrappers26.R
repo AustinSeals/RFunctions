@@ -225,7 +225,7 @@ run_CAM3_wrapper <- function(data, K, dim.rdc = 10, cos.thres = 0.95,  ...) {
 #' @param cam_obj An existing CAM object (e.g., from find_optimal_K or debCAM::CAM).
 #' @param data A gene expression matrix (Rows = Genes, Columns = Observations/Samples).
 #' @param K An integer specifying the number of subpopulations/sources.
-#' @param cos.thres cosine similarity threshold for marker gene selection. MGs with cos similarity greater than this threshold are kept .default is 0.95
+#' @param cos.thres cosine similarity threshold for marker gene selection. Top 100 MGs with cos similarity greater than this threshold are kept .default is 0.95
 #'
 #' 
 #' @return A list containing:
