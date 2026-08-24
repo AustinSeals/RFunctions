@@ -219,6 +219,7 @@ run_CAM3_wrapper <- function(data, K, dim.rdc = 10, cos.thres = 0.95,  ...) {
 
 
 
+
 #' Extract Matrices, Marker Genes, and SG Averages
 #' 
 #' @param cam_obj An existing CAM object (e.g., from find_optimal_K or debCAM::CAM).
@@ -262,19 +263,30 @@ extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95) {
   # 3. Extract SG (Specific Genes / Marker Genes) list
   SG_list = CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[1]]
   SG_df =  CAM3::cotMG(Sest = S_mat, cos.thres = cos.thres, thres.low = 0, thres.high = 1)[[2]]
+  SG_df =  tibble::rownames_to_column(as.data.frame( SG_df ) , var = "Gene")
+  
+  SG_df =   SG_df %>%
+    group_by(source) %>%
+    arrange(desc(cos)) %>%
+    slice_head(n = 100)
+  
+  SG_list =  split(SG_df$Gene , as.character(SG_df$source))
+  
+  
   # 4. Calculate the average of all SGs per Source per observation in the original data
   num_obs <- ncol(data)
   num_sources <- length(SG_list)
   
   # Ensure the sources have readable names
-  source_names <- names(SG_list)
-  if (is.null(source_names)) {
-    source_names <- paste0("Source_", seq_len(num_sources))
-    names(SG_list) <- source_names
-  }
+  #source_names <- as.character(names(SG_list) )
+  #if (is.null(source_names)) {
+  source_names <- paste0("Source_", seq_len(num_sources) , "_Avg")
+  names(SG_list) <- source_names
+  #}
   
   # Initialize the SG_averages matrix (Rows = Samples/Observations, Cols = Sources)
   SG_averages <- matrix(NA, nrow = num_obs, ncol = num_sources)
+  SG_averages = as.data.frame(SG_averages)
   rownames(SG_averages) <- colnames(data)
   colnames(SG_averages) <- source_names
   
@@ -303,14 +315,31 @@ extract_CAM3_results <- function( cam_obj ,  data, K, cos.thres = 0.95) {
   }
   
   # 5. Return combined results
+  
+  # names for A matrix. 
+  A_mat = as.data.frame(A_mat)
+  rownames(A_mat) =  colnames(data)
+  colnames(A_mat) =  paste0("Source_", seq_len(num_sources) )
+  
+  # names for S matrix. 
+  S_mat =  as.data.frame(S_mat)
+  colnames(S_mat) =  paste0("Source_", seq_len(num_sources) )
+  S_mat = tibble::rownames_to_column(as.data.frame(S_mat) , "Gene") 
+  
+  combined_sample_level_data = bind_cols(SG_averages , A_mat)
+  
   return(list(
     A_matrix = A_mat,
     S_matrix = S_mat,
     SG_list = SG_list,
     SG_df = as.data.frame(SG_df) , 
-    SG_averages = SG_averages
+    SG_averages = SG_averages,
+    combined_sample_level_data =  combined_sample_level_data
   ))
 }
+
+
+
 
 
 
