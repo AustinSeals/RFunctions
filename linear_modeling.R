@@ -1,3 +1,94 @@
+#' Run Linear Models for Multiple Dependent Variables against a Single Predictor
+#'
+#' @param df A dataframe containing the data.
+#' @param dep_vars A character vector of dependent variables.
+#' @param predictor A single character string for the predictor variable.
+#' @param covariates A character vector of variables to adjust for in every model.
+#' @return A tidy dataframe of adjusted estimates for the predictor across all DVs.
+run_adjusted_models_single_predictor <- function(df, dep_vars, predictor, covariates = NULL) {
+  
+  results_list <- list()
+  
+  # Create the string for covariates (e.g., "+ age + sex")
+  covar_string <- ""
+  if (!is.null(covariates) && length(covariates) > 0) {
+    covar_string <- paste(" +", paste(covariates, collapse = " + "))
+  }
+  
+  # Check reference level once outside the loop (since predictor is fixed)
+  ref_level <- "N/A (Continuous)"
+  if (is.factor(df[[predictor]]) || is.character(df[[predictor]])) {
+    ref_level <- levels(as.factor(df[[predictor]]))[1]
+  }
+  
+  # Loop through each dependent variable
+  for (dep in dep_vars) {
+    
+    formula_str <- paste(dep, "~", predictor, covar_string)
+    
+    model <- tryCatch({
+      lm(as.formula(formula_str), data = df)
+    }, error = function(e) {
+      warning(paste("Model failed for DV:", dep, "| Predictor:", predictor))
+      return(NULL)
+    })
+    
+    if (is.null(model)) next
+    
+    # Extract statistics
+    coef_summary <- summary(model)$coefficients
+    ci <- suppressMessages(confint(model))
+    
+    # Identify predictor-specific rows in coefficient table
+    all_rows <- rownames(coef_summary)
+    pred_rows_idx <- which(grepl(paste0("^", predictor), all_rows))
+    
+    if (length(pred_rows_idx) == 0) next
+    
+    coef_subset <- coef_summary[pred_rows_idx, , drop = FALSE]
+    ci_subset <- ci[pred_rows_idx, , drop = FALSE]
+    
+    # Clean factor/level display labels
+    levels_detected <- sub(paste0("^", predictor), "", rownames(coef_subset))
+    display_names <- ifelse(
+      levels_detected == "", 
+      predictor, 
+      paste0(predictor, " (", levels_detected, " vs ", ref_level, ")")
+    )
+    
+    # Build dataframe for this outcome
+    results_list[[dep]] <- data.frame(
+      Dependent_Variable = dep,
+      Predictor = display_names,
+      Predictor_Base = predictor,
+      Comparison_Level = ifelse(levels_detected == "", "Continuous", levels_detected),
+      Reference_Level = ref_level,
+      Beta = coef_subset[, "Estimate"],
+      Lower_CI_95 = ci_subset[, 1],
+      Upper_CI_95 = ci_subset[, 2],
+      P_Value = coef_subset[, "Pr(>|t|)"],
+      Adjusted_For = ifelse(is.null(covariates), "None", paste(covariates, collapse = ", ")),
+      stringsAsFactors = FALSE
+    )
+  }
+  
+  final_df <- do.call(rbind, results_list)
+  
+  if (!is.null(final_df)) {
+    rownames(final_df) <- NULL
+  }
+  
+  return(final_df)
+}
+
+
+
+
+
+
+
+
+
 #' Run Univariate Linear Models adjusted for a fixed set of covariates
 #'
 #' @param df A dataframe containing the data.
