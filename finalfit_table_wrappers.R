@@ -4,7 +4,7 @@ library(DT)
 library(stringr)
 library(tidyr)
 library(rlang)
-
+library(knitr)
 #' Print a Vector with Indices
 #'
 #' @description Iterates through a given vector and prints each element alongside its index.
@@ -241,4 +241,96 @@ tidy_binary_factorlist <- function(.data, replacement_label = "Present") {
 
 
 
+
+
+#' Combine Mean and Median finalfit Summary Tables
+#'
+#' Merges two \code{finalfit::summary_factorlist()} tables—one generated with continuous 
+#' variables summarized as mean (SD) and another as median (IQR)—into a single formatted table.
+#'
+#' @param df_mean Data frame. Output from \code{\link[finalfit]{summary_factorlist}} with \code{cont = "mean"}.
+#' @param df_median Data frame. Output from \code{\link[finalfit]{summary_factorlist}} with \code{cont = "median"}.
+#' @param style Character string. The desired formatting layout:
+#'   \itemize{
+#'     \item \code{"combined_cell"} (default): Merges continuous values into a single cell 
+#'           (e.g., \code{"Mean (SD) | Median [IQR]"}) and updates row levels accordingly.
+#'     \item \code{"side_by_side"}: Interleaves separate columns for Mean (SD) and Median [IQR] metrics.
+#'   }
+#' @param sep Character string. The delimiter used to join levels and summary statistics 
+#'   when \code{style = "combined_cell"}. Default is \code{" | "}.
+#'
+#' @details 
+#' Categorical variable rows (which are identical in both input tables) are detected 
+#' automatically and preserved without duplicating percentages or levels.
+#'
+#' @return A data frame formatted according to the specified \code{style}, preserving 
+#'   original variable labels and p-values if present.
+#'
+#' @examples
+#' \dontrun{
+#' library(finalfit)
+#' library(dplyr)
+#' 
+#' explanatory <- c("age", "nodes", "sex_factor")
+#' dependent   <- "mort_5yr"
+#' 
+#' tbl_mean   <- summary_factorlist(colon_s, dependent, explanatory, cont = "mean", p = TRUE)
+#' tbl_median <- summary_factorlist(colon_s, dependent, explanatory, cont = "median", p = TRUE)
+#' 
+#' # Combine into single cells with " / " separator
+#' combined_df <- combine_finalfit(tbl_mean, tbl_median, style = "combined_cell", sep = " / ")
+#' }
+#'
+#' @export
+combine_finalfit <- function(df_mean, df_median, style = "combined_cell", sep = " | ") {
+  stopifnot(nrow(df_mean) == nrow(df_median))
+  
+  # Identify metadata and data columns
+  id_cols   <- c("label", "levels")
+  p_cols    <- intersect(names(df_mean), c("p", "p_value", "p.value"))
+  data_cols <- setdiff(names(df_mean), c(id_cols, p_cols))
+  
+  # Dynamically merge the 'levels' column
+  merged_levels <- ifelse(
+    df_mean$levels == df_median$levels,
+    df_mean$levels,                                  # Categorical: e.g., "Male"
+    paste0(df_mean$levels, sep, df_median$levels)    # Continuous:  e.g., "Mean (SD) | Median (IQR)"
+  )
+  
+  if (style == "combined_cell") {
+    combined <- df_mean
+    combined$levels <- merged_levels
+    
+    # Merge data cells for continuous variables
+    for (col in data_cols) {
+      combined[[col]] <- ifelse(
+        df_mean[[col]] == df_median[[col]],
+        df_mean[[col]],                              # Keep n (%) for categorical
+        paste0(df_mean[[col]], sep, df_median[[col]]) # Combine continuous summary values
+      )
+    }
+    return(combined)
+    
+  } else if (style == "side_by_side") {
+    combined <- df_mean
+    combined$levels <- merged_levels
+    
+    mean_cols   <- paste0(data_cols, " [Mean (SD)]")
+    median_cols <- paste0(data_cols, " [Median (IQR)]")
+    
+    for (i in seq_along(data_cols)) {
+      col <- data_cols[i]
+      combined[[mean_cols[i]]]   <- df_mean[[col]]
+      combined[[median_cols[i]]] <- df_median[[col]]
+    }
+    
+    ordered_cols <- id_cols
+    for (i in seq_along(data_cols)) {
+      ordered_cols <- c(ordered_cols, mean_cols[i], median_cols[i])
+    }
+    if (length(p_cols) > 0) ordered_cols <- c(ordered_cols, p_cols[1])
+    
+    return(combined[, ordered_cols])
+  }
+}
 
